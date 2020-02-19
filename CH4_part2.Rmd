@@ -1,0 +1,140 @@
+---
+title: "Lecture 7: Gelman Hill Ch 3.7 & Ch 4.4 - 4.7"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(show.signif.stars = FALSE)
+library(tidyverse) 
+library(arm)
+```
+
+
+### Logarithmic Transformations
+
+Additivity and linearity are necessary assumptions for linear models.
+\vfill
+
+Another option is to take a logarithmic transformation...
+
+\vfill
+Consider a logarithmic transformation of the outcome variable.
+
+\vfill
+\vfill
+The logarithmic transformation also includes the ability to force an outcome variable to be positive
+\vfill
+
+Consider the Seattle housing dataset where we created the log price and scaled predictors.
+```{r, message = F}
+Seattle <- read_csv('http://math.montana.edu/ahoegh/teaching/stat408/datasets/SeattleHousing.csv')
+Seattle <- Seattle %>% 
+  mutate(log_price = log(price), 
+         beds_scale = scale(bedrooms), 
+         size_scale = scale(sqft_living))
+```
+\newpage
+```{r}
+display(lm(log_price ~ beds_scale + size_scale, data = Seattle))
+```
+
+- $\beta_0$: is the predicted (log) price for a house with an average number of bedrooms (`r round(mean(Seattle$bedrooms),1)`) and average size (`r round(mean(Seattle$sqft_living))` square feet of living space).
+\vfill
+- $\beta_{size}$ \vfill
+\vfill
+- $\beta_{beds}$ 
+\vfill
+\vfill
+
+We can use the exponential function to consider the impact on the price...
+\vfill
+
+For instance `exp(-.05) =` `r round(exp(-.05),2)`, which implies
+\vfill
+\vfill
+Additionally `exp(.52) =` `r round(exp(.52),2)`, which implies \vfill
+\vfill
+Interactions... see textbook.
+\newpage
+
+### Other Transformations and Ideas
+
+- _Square root transformations_: The square root can also be used to transform either the outcome or predictor variables.
+\vfill
+- _Continuous rather than discrete predictors_: often binary (or discrete) predictors can actually be seen as continuous variables. Rather than republican or democrat, we could use percent registered republican.
+\vfill
+- _Discrete rather than continuous predictors_: in other cases, using discrete predictors might be prefered. (Especially if the response is expected to have a form that is not monotonic or quadratic)
+\vfill
+- _Indentifiability_: If a model contains a set of regression coefficients that can be formed as a set of linear combinations is non-identifiable. This is why a baseline (intercept) term is aliased with levels of each categorical variable.
+\vfill
+
+### Explanatory Inference vs. Predictive Inference
+
+When fitting models there are two common types of models
+\vfill
+- Explanatory Inference: \vfill
+\vfill
+- Predictive Inference: \vfill
+\vfill
+\newpage
+
+Suppose we are interested in predicting housing prices...
+
+```{r}
+Seattle <- Seattle %>% mutate(zipcode = as.factor(zipcode),
+                              size_scale2 = (sqft_living - mean(sqft_living))/sd(sqft_living))
+Seattle %>% group_by(zipcode) %>% summarize(mean_price = mean(price), sd_price = sd(price), num_houses = n())
+```
+\vfill
+
+Interpret the following model...
+```{r}
+lm_preds <- lm(price ~  size_scale2  , data = Seattle)
+display(lm_preds)
+```
+\vfill
+
+How to make predictions
+```{r}
+x_new <- data.frame(size_scale2 = c(-1,0,1))
+predict(lm_preds, x_new, interval ='confidence')
+predict(lm_preds, x_new, interval ='prediction')
+```
+\vfill
+The confidence interval is \vfill
+\vfill
+The prediction interval is \vfill
+\vfill
+
+\newpage
+
+#### External Validation
+
+One of the best ways to validate a model is to use an external dataset. In other words, fit the model on a dataset for housing prices in Seattle _and then_ predict upcoming housing sales.
+\vfill
+
+#### Model Building Principles
+Note there can be huge issues when including too many predictors (overfitting)
+\vfill
+It is important to think about a reasonable theoretical model in advance (including possible signs of predictors)
+\vfill
+1. Include all input variables that, for substantive reasons, might be expected to be important in predicting the outcome.
+\vfill
+2. It is not always necessary to include these inputs as separate predictors - for example, sometimes several inputs can be averaged or summed to create a "total score" that can be used as a single predictor in the model.
+\vfill
+3. For inputs that have large effects, consider including their interactions as well.
+\vfill
+4. We suggest the following strategy for decisions regarding whether to exclude a variable from a prediction model based on expected sign and statistical significance 
+\vfill
+  a. If a predictor is not statistically significant and has the expected sign, it is generally fine to keep it in. It may not help predictions dramatically but is also not hurting them.
+  \vfill
+  b. If a predictor is not statistically significant and does not have the expected sign, consider removing it from the model.
+  \vfill
+  c. If a predictor is statistically significant and does not have the expected sign, then think hard if it makes sense. Try to gather data on potentially lurking variables and include them in the analysis.
+  \vfill
+  d. If a predictor is statistically significant and has the expected sign, then by all means keep it in the model.
+  
+\vfill
+
